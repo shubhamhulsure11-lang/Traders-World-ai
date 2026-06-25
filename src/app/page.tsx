@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import MarketBar from '@/components/MarketBar'
 import Sidebar from '@/components/Sidebar'
-import AIBiasPanel from '@/comp
+import AIBiasPanel from '@/components/AIBiasPanel'
                   <Link href="/calendar-ai" className="block bg-gradient-to-br from-purple-900/30 to-indigo-900/30 border border-purple-500/30 rounded-xl p-6 hover:border-purple-500/50 transition-all group">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-bold flex items-center gap-2">
