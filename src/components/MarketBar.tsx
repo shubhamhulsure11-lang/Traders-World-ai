@@ -45,21 +45,31 @@ export default function MarketBar() {
   }, [])
 
   const items = loading
-    ? Array(7).fill(null).map((_, i) => ({ symbol: '...', display: '...', price: 0, change: 0, decimals: 2 }))
+    ? Array(7).fill(null).map((_, i) => ({ symbol: `SYM${i}`, display: '---', price: 0, change: 0, decimals: 2 }))
     : ticks
 
+  if (items.length === 0) return null
+
   return (
-    <div className="bg-[#040d1a] border-b border-blue-glow/20 overflow-hidden">
-      <div className="flex animate-marquee whitespace-nowrap py-2">
-        {[...items, ...items].map((t, i) => (
-          <span key={i} className="inline-flex items-center gap-2 mx-6 text-xs font-mono">
-            <span className="text-[#0ea5e9] font-bold">{t.display}</span>
-            <span className="text-slate-200">
+    <div className="bg-[#040d1a]/95 border-b border-[#0ea5e9]/20 overflow-hidden relative" style={{height: '36px'}}>
+      {/* Fade edges */}
+      <div className="absolute left-0 top-0 bottom-0 w-16 z-10" style={{background: 'linear-gradient(to right, #040d1a, transparent)'}} />
+      <div className="absolute right-0 top-0 bottom-0 w-16 z-10" style={{background: 'linear-gradient(to left, #040d1a, transparent)'}} />
+      <div className="flex animate-ticker whitespace-nowrap items-center h-full">
+        {[...items, ...items, ...items].map((t, i) => (
+          <span key={i} className="inline-flex items-center gap-2 mx-8 text-xs font-mono shrink-0">
+            <span className="text-[#0ea5e9] font-bold tracking-wide">{t.display}</span>
+            <span className="text-slate-200 font-mono">
               {loading ? '---' : t.price.toFixed(t.decimals)}
             </span>
-            <span className={t.change >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-              {loading ? '' : `${t.change >= 0 ? '+' : ''}${t.change.toFixed(2)}%`}
-            </span>
+            {!loading && (
+              <span className={`font-semibold ${
+                t.change >= 0 ? 'text-emerald-400' : 'text-red-400'
+              }`}>
+                {t.change >= 0 ? '▲' : '▼'} {Math.abs(t.change).toFixed(2)}%
+              </span>
+            )}
+            <span className="text-slate-700 text-[10px]">|</span>
           </span>
         ))}
       </div>
