@@ -27,6 +27,17 @@ export default function LivePriceTicker() {
 
   useEffect(() => {
     // Initialize Binance WebSocket for crypto
+        // Initialize with realistic mock prices
+    const initialPrices = new Map<string, LivePrice>([
+      ['XAUUSD', { symbol: 'XAUUSD', price: 4008.90, change: -172.45, changePercent: -4.14, volume: 142500000000, timestamp: Date.now(), high24h: 4198.35, low24h: 3988.12 }],
+      ['DXY', { symbol: 'DXY', price: 104.25, change: 0.43, changePercent: 0.41, volume: 0, timestamp: Date.now() }],
+      ['EURUSD', { symbol: 'EURUSD', price: 1.0850, change: -0.0075, changePercent: -0.69, volume: 0, timestamp: Date.now() }],
+      ['GBPUSD', { symbol: 'GBPUSD', price: 1.2675, change: -0.0042, changePercent: -0.33, volume: 0, timestamp: Date.now() }],
+      ['SPX', { symbol: 'SPX', price: 5488.25, change: 12.50, changePercent: 0.23, volume: 3800000000, timestamp: Date.now() }],
+      ['US100', { symbol: 'US100', price: 19875.40, change: -45.20, changePercent: -0.23, volume: 2500000000, timestamp: Date.now() }]
+    ])
+    setPrices(initialPrices)
+
     binanceRef.current = new BinanceStream()
     binanceRef.current.connect(['BTC', 'ETH'])
     
