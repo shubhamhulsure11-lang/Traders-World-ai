@@ -9,6 +9,7 @@ import NewsCards from '@/components/NewsCards'
 import SessionPanel from '@/components/SessionPanel'
 import CorrelationPanel from '@/components/CorrelationPanel'
 import AIStatusBar from '@/components/AIStatusBar'
+import TodaysEvents from '@/components/TodaysEvents'
 
 const Globe = dynamic(() => import('@/components/Globe'), { ssr: false })
 
@@ -29,6 +30,9 @@ export default function Dashboard() {
               </div>
               <div className="space-y-4">
                 <AIBiasPanel />
+                          <div className="space-y-4">
+                                        <TodaysEvents />
+                                      </div>
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
