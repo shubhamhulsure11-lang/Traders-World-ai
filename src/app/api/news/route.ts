@@ -1,7 +1,21 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// Free RSS feeds — no API key needed
+// IST = UTC+5:30
+function toIST(dateInput: string | Date): string {
+  try {
+    const d = typeof dateInput === 'string' ? new Date(dateInput) : dateInput
+    if (isNaN(d.getTime())) return 'just now'
+    return d.toLocaleTimeString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    })
+  } catch { return 'just now' }
+}
+
+// Free RSS feeds
 const RSS_FEEDS = [
   { url: 'https://feeds.reuters.com/reuters/businessNews', source: 'Reuters' },
   { url: 'https://feeds.reuters.com/reuters/topNews', source: 'Reuters' },
@@ -10,7 +24,6 @@ const RSS_FEEDS = [
   { url: 'https://www.forexlive.com/feed/news', source: 'ForexLive' },
 ]
 
-// Asset keywords for tagging
 const ASSET_KEYWORDS: Record<string, string[]> = {
   XAUUSD: ['gold', 'xauusd', 'bullion', 'precious metal'],
   DXY:    ['dollar', 'dxy', 'usd', 'dollar index', 'greenback'],
@@ -50,40 +63,37 @@ async function fetchRSSFeed(feedUrl: string, source: string) {
     if (!res.ok) return []
     const xml = await res.text()
 
-    // Parse RSS items
     const items: Array<{ title: string; pubDate: string; link: string }> = []
-    const itemRegex = /<item[\s\S]*?<\/item>/g
-    const titleRegex = /<title><!\[CDATA\[(.+?)\]\]><\/title>|<title>([^<]+)<\/title>/
+    const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/g
+    const titleRegex = /<title>(?:<!\[CDATA\[([\s\S]*?)\]\]>|([^<]*))<\/title>/
     const dateRegex = /<pubDate>([^<]+)<\/pubDate>/
+    const linkRegex = /<link>([^<]+)<\/link>|<link[^>]+href="([^"]+)"/
     let match
     while ((match = itemRegex.exec(xml)) !== null) {
       const itemXml = match[0]
       const titleMatch = itemXml.match(titleRegex)
       const dateMatch = itemXml.match(dateRegex)
+      const linkMatch = itemXml.match(linkRegex)
       if (titleMatch) {
         items.push({
           title: (titleMatch[1] || titleMatch[2] || '').trim(),
           pubDate: dateMatch ? dateMatch[1] : new Date().toISOString(),
-          link: '',
+          link: linkMatch ? (linkMatch[1] || linkMatch[2] || '').trim() : '',
         })
       }
       if (items.length >= 8) break
     }
     return items.map(item => ({ ...item, source }))
-  } catch {
-    return []
-  }
+  } catch { return [] }
 }
 
 export async function GET() {
   try {
-    // Fetch from all RSS feeds in parallel
     const feedResults = await Promise.all(
       RSS_FEEDS.map(f => fetchRSSFeed(f.url, f.source))
     )
     const allItems = feedResults.flat()
 
-    // Filter only finance-relevant news (must tag at least one asset)
     const relevant = allItems
       .map(item => {
         const assets = tagAssets(item.title)
@@ -94,7 +104,6 @@ export async function GET() {
       .slice(0, 15)
 
     if (relevant.length >= 3) {
-      // Save fresh news to Supabase
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -106,8 +115,7 @@ export async function GET() {
         impact_score: r.impactScore,
         assets: r.assets,
         direction: r.direction,
-        category: r.assets.includes('BTC') || r.assets.includes('ETH') ? 'crypto' :
-                  r.assets.includes('XAUUSD') ? 'commodities' : 'macro',
+        category: r.assets.includes('BTC') || r.assets.includes('ETH') ? 'crypto' : r.assets.includes('XAUUSD') ? 'commodities' : 'macro',
         region: 'global',
         summary: r.item.title,
       }))
@@ -117,7 +125,9 @@ export async function GET() {
         id: String(i),
         headline: r.item.title,
         source: r.item.source,
-        time: r.item.pubDate ? new Date(r.item.pubDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'just now',
+        link: r.item.link || '',
+        time: toIST(r.item.pubDate),
+        timeLabel: 'IST',
         impact: r.impactScore >= 70 ? 'HIGH' : r.impactScore >= 45 ? 'MEDIUM' : 'LOW',
         impactScore: r.impactScore,
         assets: r.assets,
@@ -133,7 +143,7 @@ export async function GET() {
     console.error('RSS fetch error:', err)
   }
 
-  // Fallback to Supabase news_log
+  // Fallback to Supabase
   try {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -148,7 +158,9 @@ export async function GET() {
       id: row.id,
       headline: row.headline,
       source: row.source,
-      time: row.created_at ? new Date(row.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : 'just now',
+      link: '',
+      time: toIST(row.created_at),
+      timeLabel: 'IST',
       impact: (row.impact || 'medium').toUpperCase(),
       impactScore: row.impact_score || 50,
       assets: Array.isArray(row.assets) ? row.assets : [],
