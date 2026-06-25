@@ -1,4 +1,5 @@
 'use client'
+// TradeLens AI v1.0 - Alerts, Correlations, Sessions all live
 import dynamic from 'next/dynamic'
 import MarketBar from '@/components/MarketBar'
 import Sidebar from '@/components/Sidebar'
