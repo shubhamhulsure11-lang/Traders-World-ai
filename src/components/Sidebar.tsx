@@ -6,15 +6,15 @@ import { useState } from 'react'
 const NAV = [
   { icon: '⚡', label: 'Dashboard', href: '/' },
   { icon: '🌐', label: 'Globe', href: '/' },
-  { icon: '📈', label: 'AI Analysis', href: '/analysis' },
+  { icon: '✅', label: 'AI Analysis', href: '/analysis' },
   { icon: '📰', label: 'Live Feed', href: '/live-feed' },
   { icon: '🎯', label: 'Market Radar', href: '/' },
-  { icon: '📅', label: 'Calendar AI', href: '/' },
-  { icon: '🦦', label: 'Gold Intel', href: '/analysis/XAUUSD' },
+  { icon: '📅', label: 'Calendar AI', href: '/calendar-ai' },
+  { icon: '🔬', label: 'Gold Intel', href: '/analysis/XAUUSD' },
   { icon: '🔗', label: 'Correlations', href: '/correlations' },
   { icon: '⏰', label: 'Sessions', href: '/sessions' },
   { icon: '🔔', label: 'Alerts', href: '/alerts' },
-  { icon: '📓', label: 'Journal', href: '/' },
+  { icon: '📔', label: 'Journal', href: '/' },
   { icon: '⚙️', label: 'Settings', href: '/' },
 ]
 
@@ -29,49 +29,44 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className={`${
-      collapsed ? 'w-14' : 'w-56'
-    } glass border-r border-[#0ea5e9]/15 flex flex-col transition-all duration-300 shrink-0 z-40`}>
-      <div className="flex items-center justify-between p-4 border-b border-[#0ea5e9]/15">
+    <aside className={`h-screen ${collapsed ? 'w-16' : 'w-64'} bg-[#0a0e27] border-r border-blue-glow/10 transition-all flex flex-col`}>
+      <div className="p-6 border-b border-blue-glow/10 flex items-center justify-between">
         {!collapsed && (
           <div>
-            <h1 className="text-sm font-bold text-[#0ea5e9] glow-text-blue tracking-wider">TRADELENS</h1>
-            <p className="text-[9px] text-slate-600 tracking-widest uppercase">AI Market Intelligence</p>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">TRADELENS</h1>
+            <p className="text-xs text-gray-500">AI MARKET INTELLIGENCE</p>
           </div>
         )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:text-[#0ea5e9] transition-colors ml-auto"
-        >
-          {collapsed ? '»' : '«'}
+        <button onClick={() => setCollapsed(!collapsed)} className="text-gray-400 hover:text-white">
+          {collapsed ? '→' : '←'}
         </button>
       </div>
-      <nav className="flex-1 py-3 overflow-y-auto">
+
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {NAV.map(item => (
           <Link
             key={item.label}
             href={item.href}
-            className={`sidebar-item w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
               isActive(item.href, item.label)
-                ? 'active text-[#0ea5e9]'
-                : 'text-slate-500 hover:text-slate-300'
+                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                : 'text-gray-400 hover:bg-white/5 hover:text-white'
             }`}
           >
-            <span className="text-base shrink-0">{item.icon}</span>
-            {!collapsed && (
-              <span className="text-xs font-medium truncate">{item.label}</span>
-            )}
+            <span className="text-lg">{item.icon}</span>
+            {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
           </Link>
         ))}
       </nav>
-      {!collapsed && (
-        <div className="p-4 border-t border-[#0ea5e9]/10">
-          <p className="text-[9px] text-slate-700 text-center leading-relaxed">
-            Built by<br/>
-            <span className="text-[#0ea5e9]/60 font-medium">SHUBHAM HULSURE</span>
+
+      <div className="p-4 border-t border-blue-glow/10 text-center">
+        {!collapsed && (
+          <p className="text-xs text-gray-600">
+            Built by<br />
+            <span className="text-[#0ea5e9] font-semibold glow-text-blue">SHUBHAM HULSURE</span>
           </p>
-        </div>
-      )}
+        )}
+      </div>
     </aside>
   )
 }
