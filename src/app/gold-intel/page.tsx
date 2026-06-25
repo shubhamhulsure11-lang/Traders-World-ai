@@ -1,6 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import TradingViewChart from '@/components/TradingViewChart'
+import MarketHeatmap from '@/components/MarketHeatmap'
+import PriceAlerts from '@/components/PriceAlerts'
 
 interface GoldData {
   price: number
@@ -191,6 +193,15 @@ export default function GoldIntelPage() {
                   </span>
                 </div>
               </div>
+
+                    {/* Market Heatmap */}
+                            <div className="glass rounded-xl p-6 border border-[#0ea5e9]/10">
+                                      <h3 className="text-lg font-bold mb-4">Live Market Heatmap</h3>
+                                      <MarketHeatmap />
+                                    </div>
+
+                    {/* Price Alerts */}
+                    <PriceAlerts />
             </div>
           ))}
         </div>
