@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import MarketBar from '@/components/MarketBar'
+import TradingViewChart from '@/components/TradingViewChart'
 
 const BIAS_COLORS: Record<string, string> = {
   BULLISH: 'text-emerald-400', BEARISH: 'text-red-400', NEUTRAL: 'text-yellow-400'
@@ -48,6 +49,11 @@ export default function AssetAnalysisPage() {
             <span className="text-slate-700">/</span>
             <span className="text-sm font-bold text-white">{asset}</span>
           </div>
+
+                  {/* TradingView Chart */}
+                  <div className="glass rounded-xl p-6 border border-[#0ea5e9]/10 mb-6">
+                              <TradingViewChart symbol={asset.toUpperCase()} />
+                            </div>
 
           {loading ? (
             <div className="space-y-4">
