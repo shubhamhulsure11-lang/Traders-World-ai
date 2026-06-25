@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import * as cheerio from 'cheerio'
 
 interface CalendarEvent {
   id: string
