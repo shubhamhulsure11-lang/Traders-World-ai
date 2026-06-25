@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import TradingViewChart from '@/components/TradingViewChart'
 
 interface GoldData {
   price: number
@@ -98,6 +99,11 @@ export default function GoldIntelPage() {
             <p className="text-sm opacity-70">AI Market Bias</p>
           </div>
         </div>
+
+              {/* TradingView Chart */}
+              <div className="glass rounded-xl p-6 border border-[#0ea5e9]/10">
+                        <TradingViewChart symbol="XAUUSD" />
+                      </div>
 
         <div className="grid grid-cols-4 gap-4">
           <div>
