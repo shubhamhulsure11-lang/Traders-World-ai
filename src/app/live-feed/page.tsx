@@ -7,25 +7,6 @@ const SENTIMENT_COLORS: Record<string, string> = {
   NEUTRAL: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/5',
 }
 
-function formatTime(timeStr: string): string {
-  // API returns time like "01:06" (UTC hours:mins)
-  if (!timeStr) return ''
-  // parse as UTC time today
-  const [h, m] = timeStr.split(':').map(Number)
-  if (isNaN(h) || isNaN(m)) return timeStr
-  const now = new Date()
-  const then = new Date()
-  then.setUTCHours(h, m, 0, 0)
-  // if 'then' is in the future, it was yesterday
-  if (then > now) then.setUTCDate(then.getUTCDate() - 1)
-  const diffMins = Math.floor((now.getTime() - then.getTime()) / 60000)
-  if (diffMins < 1) return 'just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  const hrs = Math.floor(diffMins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.floor(hrs / 24)}d ago`
-}
-
 export default function LiveFeedPage() {
   const [news, setNews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -38,7 +19,14 @@ export default function LiveFeedPage() {
       const res = await fetch('/api/news')
       const data = await res.json()
       setNews(data.news || [])
-      setUpdated(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
+      // Show current IST time as last updated
+      setUpdated(new Date().toLocaleTimeString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+      }))
     } catch (e) {
       console.error(e)
     } finally {
@@ -67,10 +55,10 @@ export default function LiveFeedPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-white tracking-wide">Live Intelligence Feed</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Real-time market news with AI sentiment scoring</p>
+          <p className="text-xs text-slate-500 mt-0.5">Real-time market news with AI sentiment • Times in IST</p>
         </div>
         <div className="flex items-center gap-3">
-          {updated && <span className="text-[10px] text-slate-600">Updated {updated}</span>}
+          {updated && <span className="text-[10px] text-slate-600">Updated {updated} IST</span>}
           <button
             onClick={() => { setLoading(true); fetchNews() }}
             className="px-3 py-1.5 rounded text-xs font-medium bg-[#0ea5e9]/20 border border-[#0ea5e9]/30 text-[#0ea5e9] hover:bg-[#0ea5e9]/30 transition-colors"
@@ -79,7 +67,6 @@ export default function LiveFeedPage() {
           </button>
         </div>
       </div>
-
       {/* Search + Filter */}
       <div className="flex gap-3 flex-wrap">
         <input
@@ -106,12 +93,9 @@ export default function LiveFeedPage() {
           </button>
         ))}
       </div>
-
-      {/* Count */}
       {!loading && (
         <p className="text-xs text-slate-600">{filtered.length} article{filtered.length !== 1 ? 's' : ''}</p>
       )}
-
       {/* Cards */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -134,21 +118,33 @@ export default function LiveFeedPage() {
             const sentColor = SENTIMENT_COLORS[dir] || SENTIMENT_COLORS.NEUTRAL
             const isHigh = item.impact === 'HIGH'
             const assets: string[] = item.assets || []
+            const hasLink = item.link && item.link.startsWith('http')
             return (
               <div key={item.id ?? i} className={`glass rounded-xl p-4 border transition-all hover:border-[#0ea5e9]/30 ${
                 isHigh ? 'border-orange-500/20' : 'border-white/5'
               }`}>
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <p className="text-sm font-medium text-slate-100 leading-snug flex-1">
-                    {item.headline || 'No headline'}
-                  </p>
+                  <div className="flex-1">
+                    {hasLink ? (
+                      <a
+                        href={item.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium text-slate-100 leading-snug hover:text-[#0ea5e9] transition-colors cursor-pointer"
+                      >
+                        {item.headline || 'No headline'}
+                        <span className="ml-1 text-[#0ea5e9] text-[10px] opacity-60">↗</span>
+                      </a>
+                    ) : (
+                      <p className="text-sm font-medium text-slate-100 leading-snug">
+                        {item.headline || 'No headline'}
+                      </p>
+                    )}
+                  </div>
                   <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full border font-semibold ${sentColor}`}>
                     {dir}
                   </span>
                 </div>
-                {item.summary && (
-                  <p className="text-xs text-slate-500 leading-relaxed mb-3 line-clamp-2">{item.summary}</p>
-                )}
                 {isHigh && (
                   <div className="mb-2">
                     <span className="text-[10px] px-2 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 font-medium">
@@ -164,9 +160,15 @@ export default function LiveFeedPage() {
                       </span>
                     ))}
                   </div>
-                  <div className="text-right ml-2">
-                    <div className="text-[10px] text-slate-500">{item.source}</div>
-                    <div className="text-[10px] text-slate-600">{formatTime(item.time)} UTC</div>
+                  <div className="text-right ml-2 flex items-center gap-2">
+                    <span className="text-[10px] text-slate-500">{item.source}</span>
+                    <span className="text-[10px] text-slate-600 bg-slate-800/50 px-1.5 py-0.5 rounded">{item.time} IST</span>
+                    {hasLink && (
+                      <a href={item.link} target="_blank" rel="noopener noreferrer"
+                        className="text-[10px] text-[#0ea5e9] hover:text-[#0ea5e9]/80 border border-[#0ea5e9]/30 px-1.5 py-0.5 rounded transition-colors">
+                        Read ↗
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
