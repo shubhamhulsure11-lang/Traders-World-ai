@@ -8,22 +8,6 @@ const SENTIMENT_COLORS: Record<string, string> = {
   NEUTRAL: 'text-yellow-400 bg-yellow-400/10 border-yellow-500/30',
 }
 
-function formatTime(timeStr: string): string {
-  if (!timeStr) return ''
-  const [h, m] = timeStr.split(':').map(Number)
-  if (isNaN(h) || isNaN(m)) return timeStr
-  const now = new Date()
-  const then = new Date()
-  then.setUTCHours(h, m, 0, 0)
-  if (then > now) then.setUTCDate(then.getUTCDate() - 1)
-  const diffMins = Math.floor((now.getTime() - then.getTime()) / 60000)
-  if (diffMins < 1) return 'just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  const hrs = Math.floor(diffMins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.floor(hrs / 24)}d ago`
-}
-
 export default function NewsCards() {
   const [news, setNews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -40,7 +24,7 @@ export default function NewsCards() {
     <div className="glass rounded-2xl border border-white/5 p-4">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-white">Market Intelligence</h2>
-        <span className="text-[10px] text-slate-500">AI Scored</span>
+        <span className="text-[10px] text-slate-500">AI Scored • IST</span>
       </div>
       <div className="space-y-2">
         {loading ? (
@@ -57,12 +41,20 @@ export default function NewsCards() {
             const dir = (item.direction || 'NEUTRAL').toUpperCase()
             const sentColor = SENTIMENT_COLORS[dir] || SENTIMENT_COLORS.NEUTRAL
             const assets: string[] = item.assets || []
+            const hasLink = item.link && item.link.startsWith('http')
             return (
               <div key={item.id ?? i} className="p-3 rounded-lg bg-white/2 hover:bg-white/4 transition-colors border border-white/5">
                 <div className="flex items-start justify-between gap-2 mb-1">
-                  <p className="text-xs text-slate-200 leading-snug flex-1 line-clamp-2">
-                    {item.headline || 'No headline'}
-                  </p>
+                  {hasLink ? (
+                    <a href={item.link} target="_blank" rel="noopener noreferrer"
+                      className="text-xs text-slate-200 leading-snug flex-1 line-clamp-2 hover:text-[#0ea5e9] transition-colors">
+                      {item.headline || 'No headline'}
+                    </a>
+                  ) : (
+                    <p className="text-xs text-slate-200 leading-snug flex-1 line-clamp-2">
+                      {item.headline || 'No headline'}
+                    </p>
+                  )}
                   <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded border font-semibold ${sentColor}`}>
                     {dir}
                   </span>
@@ -73,7 +65,7 @@ export default function NewsCards() {
                       <span key={a} className="text-[9px] px-1 py-0.5 rounded bg-[#0ea5e9]/10 text-[#0ea5e9]">{a}</span>
                     ))}
                   </div>
-                  <span className="text-[9px] text-slate-600">{item.source} · {formatTime(item.time)}</span>
+                  <span className="text-[9px] text-slate-600">{item.source} · {item.time} IST</span>
                 </div>
               </div>
             )
