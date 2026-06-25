@@ -157,7 +157,7 @@ export async function GET(request: Request) {
     // Send alerts for each group
     let alertsSent = 0
     for (const group of Object.values(groupedReleases)) {
-      const message = formatTelegramAlert(group)
+      const message = formatTelegramAlert(group as EconomicEvent[])
       if (message) {
         await sendTelegramAlert(message)
         alertsSent++
