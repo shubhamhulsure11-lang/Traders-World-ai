@@ -22,6 +22,14 @@ const RSS_FEEDS = [
   { url: 'https://www.investing.com/rss/news.rss', source: 'Investing.com' },
   { url: 'https://feeds.marketwatch.com/marketwatch/topstories/', source: 'MarketWatch' },
   { url: 'https://www.forexlive.com/feed/news', source: 'ForexLive' },
+    // Central Banks & Financial Institutions
+  { url: 'https://www.federalreserve.gov/feeds/press_all.xml', source: 'Federal Reserve' },
+  { url: 'https://www.ecb.europa.eu/rss/press.html', source: 'ECB' },
+  { url: 'https://www.bankofengland.co.uk/news.rss', source: 'Bank of England' },
+  { url: 'https://www.boj.or.jp/en/rss/whatsnew.xml', source: 'Bank of Japan' },
+  { url: 'https://home.treasury.gov/RSS/PressReleases', source: 'US Treasury' },
+  { url: 'https://www.imf.org/en/News/RSS', source: 'IMF' },
+  { url: 'https://www.worldbank.org/en/news/all.rss', source: 'World Bank' },
 ]
 
 const ASSET_KEYWORDS: Record<string, string[]> = {
