@@ -1,82 +1,87 @@
 import { NextResponse } from 'next/server'
-
-const MOCK_NEWS = [
-  {
-    id: '1',
-    headline: 'Fed signals potential rate cut in Q3 2024 amid cooling inflation data',
-    source: 'Reuters',
-    time: '2 min ago',
-    impact: 'HIGH',
-    impactScore: 92,
-    assets: ['XAUUSD', 'EURUSD', 'US10Y'],
-    direction: 'BULLISH',
-    confidence: 87,
-    category: 'central_bank',
-    region: 'US',
-    summary: 'Federal Reserve officials indicated readiness to cut rates if inflation continues to ease, boosting gold and weakening the dollar.',
-  },
-  {
-    id: '2',
-    headline: 'Gold demand surges as central banks increase reserves to 55-year high',
-    source: 'Bloomberg',
-    time: '8 min ago',
-    impact: 'HIGH',
-    impactScore: 88,
-    assets: ['XAUUSD'],
-    direction: 'BULLISH',
-    confidence: 91,
-    category: 'commodities',
-    region: 'GLOBAL',
-    summary: 'Global central bank gold purchases hit a record high as nations diversify reserves away from USD.',
-  },
-  {
-    id: '3',
-    headline: 'Bitcoin ETF inflows reach $2.1B in a single week, institutional demand rising',
-    source: 'CoinDesk',
-    time: '15 min ago',
-    impact: 'MEDIUM',
-    impactScore: 74,
-    assets: ['BTC', 'ETH'],
-    direction: 'BULLISH',
-    confidence: 79,
-    category: 'crypto',
-    region: 'US',
-    summary: 'Spot Bitcoin ETFs see record weekly inflows signaling strong institutional conviction.',
-  },
-  {
-    id: '4',
-    headline: 'Eurozone PMI unexpectedly contracts to 47.2, recession fears return',
-    source: 'Financial Times',
-    time: '22 min ago',
-    impact: 'HIGH',
-    impactScore: 85,
-    assets: ['EURUSD'],
-    direction: 'BEARISH',
-    confidence: 83,
-    category: 'macro',
-    region: 'EU',
-    summary: 'Eurozone manufacturing activity fell sharply, raising fears of a technical recession and weighing on EUR.',
-  },
-  {
-    id: '5',
-    headline: 'Middle East tensions escalate - oil and gold spike on safe haven flows',
-    source: 'Al Jazeera',
-    time: '31 min ago',
-    impact: 'HIGH',
-    impactScore: 90,
-    assets: ['XAUUSD', 'WTI'],
-    direction: 'BULLISH',
-    confidence: 86,
-    category: 'geopolitical',
-    region: 'MENA',
-    summary: 'Renewed conflict in the region triggers safe haven buying in gold and pushes oil above $90.',
-  },
-]
+import { createClient } from '@supabase/supabase-js'
 
 export async function GET() {
-  return NextResponse.json({
-    news: MOCK_NEWS,
-    total: MOCK_NEWS.length,
-    updatedAt: new Date().toISOString(),
-  })
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    const { data, error } = await supabase
+      .from('news_log')
+      .select('id, headline, source, impact, impact_score, assets, direction, category, region, summary, created_at')
+      .order('created_at', { ascending: false })
+      .limit(20)
+
+    if (error) throw error
+
+    const news = (data || []).map((row) => ({
+      id: row.id,
+      headline: row.headline,
+      source: row.source,
+      time: row.created_at ? new Date(row.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + ' ago' : 'just now',
+      impact: (row.impact || 'medium').toUpperCase(),
+      impactScore: row.impact_score || 50,
+      assets: Array.isArray(row.assets) ? row.assets : (row.assets ? Object.values(row.assets) : []),
+      direction: (row.direction || 'neutral').toUpperCase(),
+      confidence: row.impact_score || 50,
+      category: row.category || 'general',
+      region: row.region || 'global',
+      summary: row.summary || row.headline,
+    }))
+
+    return NextResponse.json({ news, source: 'supabase', timestamp: new Date().toISOString() })
+  } catch (err) {
+    console.error('News API error:', err)
+    // Fallback mock news
+    return NextResponse.json({
+      news: [
+        {
+          id: '1',
+          headline: 'Fed holds rates steady — Gold and bonds rally',
+          source: 'Reuters',
+          time: '2 min ago',
+          impact: 'HIGH',
+          impactScore: 85,
+          assets: ['XAUUSD', 'US10Y', 'DXY'],
+          direction: 'BULLISH',
+          confidence: 82,
+          category: 'monetary_policy',
+          region: 'US',
+          summary: 'Federal Reserve maintains rates; markets interpret as dovish pivot signal.',
+        },
+        {
+          id: '2',
+          headline: 'Gold demand surges as central banks increase reserves',
+          source: 'Bloomberg',
+          time: '8 min ago',
+          impact: 'HIGH',
+          impactScore: 88,
+          assets: ['XAUUSD'],
+          direction: 'BULLISH',
+          confidence: 85,
+          category: 'commodities',
+          region: 'global',
+          summary: 'Central bank gold purchases hit 55-year high, supporting prices above $2300.',
+        },
+        {
+          id: '3',
+          headline: 'BTC breaks 67K resistance on ETF inflows',
+          source: 'CoinDesk',
+          time: '15 min ago',
+          impact: 'MEDIUM',
+          impactScore: 70,
+          assets: ['BTC', 'ETH'],
+          direction: 'BULLISH',
+          confidence: 74,
+          category: 'crypto',
+          region: 'global',
+          summary: 'Bitcoin ETF net inflows exceeded $500M driving breakout above key resistance.',
+        },
+      ],
+      source: 'fallback',
+      timestamp: new Date().toISOString()
+    })
+  }
 }
