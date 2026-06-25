@@ -98,15 +98,13 @@ export default function Globe() {
       const ringMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
       const ring = new THREE.Mesh(ringGeo, ringMat)
       ring.position.copy(pos)
-      ring.lookAt(new THREE.Vector3(0, 0, 0))
-      scene.add(ring)
+feat(Globe): increase auto-rotation speed from 0.002 to 0.01      scene.add(ring)
     })
 
     let isDragging = false
     let prevMouse = { x: 0, y: 0 }
     let rotX = 0, rotY = 0
-    let velX = 0, velY = 0.002
-
+    let velX = 0, velY = 0.01  // Increased from 0.002 for visible auto-rotation
     const onMouseDown = (e: MouseEvent) => { isDragging = true; prevMouse = { x: e.clientX, y: e.clientY }; velX = 0; velY = 0 }
     const onMouseUp = () => { isDragging = false }
     const onMouseMove = (e: MouseEvent) => {
