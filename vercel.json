@@ -6,6 +6,5 @@
     },
         {
                 "path": "/api/news-monitor",
-      "schedule": "* * * * *"              }
-  ]
+      "schedule": "0 8 * * *"            }  ]
 }
