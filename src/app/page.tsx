@@ -1,9 +1,24 @@
 'use client'
 // TradeLens AI v1.0 - Alerts, Correlations, Sessions all live
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import MarketBar from '@/components/MarketBar'
 import Sidebar from '@/components/Sidebar'
-import AIBiasPanel from '@/components/AIBiasPanel'
+import AIBiasPanel from '@/comp
+                  <Link href="/calendar-ai" className="block bg-gradient-to-br from-purple-900/30 to-indigo-900/30 border border-purple-500/30 rounded-xl p-6 hover:border-purple-500/50 transition-all group">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                      📅 Calendar AI
+                    </h2>
+                    <span className="text-purple-400 group-hover:translate-x-1 transition-transform">→</span>
+                  </div>
+                  <p className="text-gray-400 mb-4">AI-powered economic calendar with impact forecasting</p>
+                  <div className="flex gap-2">
+                    <span className="px-3 py-1 bg-red-500/20 border border-red-500/50 rounded-full text-xs text-red-300 font-bold">HIGH</span>
+                    <span className="px-3 py-1 bg-yellow-500/20 border border-yellow-500/50 rounded-full text-xs text-yellow-300 font-bold">MEDIUM</span>
+                    <span className="px-3 py-1 bg-green-500/20 border border-green-500/50 rounded-full text-xs text-green-300 font-bold">LOW</span>
+                  </div>
+                </Link>onents/AIBiasPanel'
 import NewsCards from '@/components/NewsCards'
 import SessionPanel from '@/components/SessionPanel'
 import CorrelationPanel from '@/components/CorrelationPanel'
