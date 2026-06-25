@@ -1,24 +1,32 @@
 'use client'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 
 const NAV = [
-  { icon: '⚡', label: 'Dashboard', active: true },
-  { icon: '🌐', label: 'Globe' },
-  { icon: '📈', label: 'AI Analysis' },
-  { icon: '📰', label: 'Live Feed' },
-  { icon: '🎯', label: 'Market Radar' },
-  { icon: '📅', label: 'Calendar AI' },
-  { icon: '🦥', label: 'Gold Intel' },
-  { icon: '🔗', label: 'Correlations' },
-  { icon: '⏰', label: 'Sessions' },
-  { icon: '🔔', label: 'Alerts' },
-  { icon: '📓', label: 'Journal' },
-  { icon: '⚙️', label: 'Settings' },
+  { icon: '⚡', label: 'Dashboard', href: '/' },
+  { icon: '🌐', label: 'Globe', href: '/' },
+  { icon: '📈', label: 'AI Analysis', href: '/analysis' },
+  { icon: '📰', label: 'Live Feed', href: '/live-feed' },
+  { icon: '🎯', label: 'Market Radar', href: '/' },
+  { icon: '📅', label: 'Calendar AI', href: '/' },
+  { icon: '🦦', label: 'Gold Intel', href: '/analysis/XAUUSD' },
+  { icon: '🔗', label: 'Correlations', href: '/correlations' },
+  { icon: '⏰', label: 'Sessions', href: '/sessions' },
+  { icon: '🔔', label: 'Alerts', href: '/alerts' },
+  { icon: '📓', label: 'Journal', href: '/' },
+  { icon: '⚙️', label: 'Settings', href: '/' },
 ]
 
 export default function Sidebar() {
-  const [active, setActive] = useState('Dashboard')
+  const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+
+  function isActive(href: string, label: string) {
+    if (href === '/' && label === 'Dashboard') return pathname === '/'
+    if (href === '/') return false
+    return pathname.startsWith(href)
+  }
 
   return (
     <aside className={`${
@@ -38,14 +46,13 @@ export default function Sidebar() {
           {collapsed ? '»' : '«'}
         </button>
       </div>
-
       <nav className="flex-1 py-3 overflow-y-auto">
         {NAV.map(item => (
-          <button
+          <Link
             key={item.label}
-            onClick={() => setActive(item.label)}
-            className={`sidebar-item w-full flex items-center gap-3 px-4 py-2.5 text-left ${
-              active === item.label
+            href={item.href}
+            className={`sidebar-item w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+              isActive(item.href, item.label)
                 ? 'active text-[#0ea5e9]'
                 : 'text-slate-500 hover:text-slate-300'
             }`}
@@ -54,10 +61,9 @@ export default function Sidebar() {
             {!collapsed && (
               <span className="text-xs font-medium truncate">{item.label}</span>
             )}
-          </button>
+          </Link>
         ))}
       </nav>
-
       {!collapsed && (
         <div className="p-4 border-t border-[#0ea5e9]/10">
           <p className="text-[9px] text-slate-700 text-center leading-relaxed">
