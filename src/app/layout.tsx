@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import LivePriceTicker from '@/components/LivePriceTicker'
 
 export const metadata: Metadata = {
   title: 'TradeLens AI — AI Market Intelligence Operating System',
@@ -29,6 +30,7 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-[#020408] text-slate-100 antialiased">
+              <LivePriceTicker />
         {children}
       </body>
     </html>
