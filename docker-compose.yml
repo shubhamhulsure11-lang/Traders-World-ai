@@ -17,7 +17,8 @@ services:
       - /app/node_modules
       - /app/.next
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - traders_world
 
@@ -28,20 +29,23 @@ services:
       dockerfile: Dockerfile.dev
     ports:
       - "8000:8000"
-    env_file:
-      - .env
     environment:
       - DATABASE_URL=sqlite:////data/traders_world.db
       - CHROMA_HOST=chromadb
       - CHROMA_PORT=8000
       - KNOWLEDGE_PATH=/knowledge
       - ENV=development
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     volumes:
       - ./backend:/app
       - ./knowledge:/knowledge:ro
       - ./data:/data
-      - ./prompts:/prompts:ro
     command: uvicorn main:app --reload --host 0.0.0.0 --port 8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     depends_on:
       - chromadb
     networks:

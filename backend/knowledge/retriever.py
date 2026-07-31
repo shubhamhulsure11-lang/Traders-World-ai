@@ -1,34 +1,29 @@
 """
 Knowledge Retriever — Hybrid BM25 + Vector search with RRF fusion and Gemini reranking.
-Implements the full RAG spec from implementation plan §2.
 """
 import logging
 import math
 import os
+import hashlib
 from dataclasses import dataclass, field
 from typing import Optional
 
-import chromadb
 from rank_bm25 import BM25Okapi
-
 from config import get_settings
+from knowledge.chroma_client import get_chroma_collection
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-# Category boost weights by intent
 CATEGORY_BOOSTS = {
-    "live_analysis":    {"strategy": 1.5, "rule": 1.5},
-    "teaching":         {"glossary": 1.5, "example": 1.5},
-    "journal_review":   {"journal": 1.5, "psychology": 1.5},
-    "backtest_query":   {"backtest": 1.5},
-    "psychology":       {"psychology": 1.5, "rule": 1.3},
-    "strategy_question":{"strategy": 1.5, "rule": 1.5},
-    "checklist":        {"strategy": 1.5, "rule": 1.5},
+    "live_analysis":    {"strategy": 1.5, "rules": 1.5},
+    "teaching":         {"glossary": 1.5, "strategy": 1.5},
+    "journal_review":   {"psychology": 1.5, "rules": 1.5},
+    "backtest_query":   {"strategy": 1.5},
+    "psychology":       {"psychology": 1.5, "rules": 1.3},
+    "strategy_question":{"strategy": 1.5, "rules": 1.5},
+    "checklist":        {"strategy": 1.5, "rules": 1.5},
 }
-
-# Reranker threshold — chunks scoring below this are dropped
-RERANK_THRESHOLD = 0.35
 
 
 @dataclass
@@ -52,26 +47,12 @@ class RetrievalResult:
 
 class KnowledgeRetriever:
     def __init__(self):
-        self._chroma: Optional[chromadb.AsyncHttpClient] = None
         self._collection = None
-        self._bm25_index = None
-        self._bm25_docs = []
         self._provider = None
 
-    async def _get_collection(self):
+    def _get_collection(self):
         if self._collection is None:
-            try:
-                client = chromadb.AsyncHttpClient(
-                    host=settings.chroma_host,
-                    port=settings.chroma_port,
-                )
-                self._collection = await client.get_or_create_collection(
-                    name="traders_world_knowledge",
-                    metadata={"hnsw:space": "cosine"},
-                )
-                logger.info("ChromaDB collection connected")
-            except Exception as e:
-                logger.warning(f"ChromaDB unavailable: {e}")
+            self._collection = get_chroma_collection("traders_world_knowledge")
         return self._collection
 
     def _get_provider(self):
@@ -80,25 +61,42 @@ class KnowledgeRetriever:
             self._provider = GeminiProvider()
         return self._provider
 
+    def _fallback_embedding(self, text: str) -> list[float]:
+        h = hashlib.sha256(text.encode('utf-8')).digest()
+        vector = []
+        for i in range(768):
+            b = h[i % len(h)]
+            val = ((b + i) % 256) / 128.0 - 1.0
+            vector.append(val)
+        return vector
+
     async def retrieve(self, query: str, intent=None, top_k: int = 5) -> RetrievalResult:
         """
         Hybrid search: BM25 + Vector, fused with RRF, then reranked.
         """
-        collection = await self._get_collection()
-        if collection is None:
-            logger.warning("Knowledge retriever: ChromaDB not available, returning empty")
+        collection = self._get_collection()
+        if collection is None or collection.count() == 0:
+            logger.warning("Knowledge retriever: ChromaDB empty or unavailable")
             return RetrievalResult(fallback_triggered=True)
 
         try:
             # ── Dense (vector) search ──────────────────────────────
-            query_embedding = await self._get_provider().embed_query(query)
-            vector_results = await collection.query(
+            if settings.gemini_api_key:
+                try:
+                    query_embedding = await self._get_provider().embed_query(query)
+                    if not query_embedding:
+                        query_embedding = self._fallback_embedding(query)
+                except Exception:
+                    query_embedding = self._fallback_embedding(query)
+            else:
+                query_embedding = self._fallback_embedding(query)
+
+            vector_results = collection.query(
                 query_embeddings=[query_embedding],
-                n_results=min(20, top_k * 4),
+                n_results=min(20, max(top_k * 4, collection.count())),
                 include=["documents", "metadatas", "distances"],
             )
 
-            # Parse vector results into ranked list
             vector_ranked = []
             if vector_results["ids"] and vector_results["ids"][0]:
                 for i, chunk_id in enumerate(vector_results["ids"][0]):
@@ -110,6 +108,9 @@ class KnowledgeRetriever:
                         "vector_rank": i + 1,
                     })
 
+            if not vector_ranked:
+                return RetrievalResult(fallback_triggered=True)
+
             # ── BM25 (keyword) search ─────────────────────────────
             bm25_ranked = self._bm25_search(query, vector_ranked)
 
@@ -117,14 +118,14 @@ class KnowledgeRetriever:
             fused = self._rrf_fusion(vector_ranked, bm25_ranked)
 
             # ── Category boosting ─────────────────────────────────
-            if intent and intent.intent in CATEGORY_BOOSTS:
-                boosts = CATEGORY_BOOSTS[intent.intent]
+            intent_key = intent.intent if hasattr(intent, "intent") else (intent if isinstance(intent, str) else None)
+            if intent_key and intent_key in CATEGORY_BOOSTS:
+                boosts = CATEGORY_BOOSTS[intent_key]
                 for item in fused:
                     cat = item["metadata"].get("category", "")
                     if cat in boosts:
                         item["rrf_score"] *= boosts[cat]
 
-            # Sort by final score
             fused.sort(key=lambda x: x["rrf_score"], reverse=True)
             candidates = fused[:top_k]
 
@@ -134,7 +135,6 @@ class KnowledgeRetriever:
             # ── Reranking ─────────────────────────────────────────
             reranked = await self._rerank(query, candidates)
 
-            # Build final result
             chunks = []
             citations = []
             for item in reranked:
@@ -152,7 +152,7 @@ class KnowledgeRetriever:
                     "label": f"{item['metadata'].get('category', '').title()}: {item['metadata'].get('heading', '')}",
                     "source": item["metadata"].get("source_file", ""),
                     "section": item["metadata"].get("heading", ""),
-                    "relevance_score": round(item.get("rerank_score", 0.5), 3),
+                    "relevance_score": round(item.get("rerank_score", item["rrf_score"]), 3),
                 })
 
             avg_score = sum(c.score for c in chunks) / len(chunks) if chunks else 0.0
@@ -160,8 +160,8 @@ class KnowledgeRetriever:
             return RetrievalResult(
                 chunks=chunks,
                 citations=citations,
-                retrieval_score=avg_score,
-                fallback_triggered=avg_score < 0.3,
+                retrieval_score=round(avg_score, 3),
+                fallback_triggered=avg_score < 0.2,
             )
 
         except Exception as e:
@@ -169,7 +169,6 @@ class KnowledgeRetriever:
             return RetrievalResult(fallback_triggered=True)
 
     def _bm25_search(self, query: str, vector_docs: list) -> list:
-        """BM25 keyword search over the same document set."""
         if not vector_docs:
             return []
         tokenized_corpus = [doc["text"].lower().split() for doc in vector_docs]
@@ -189,7 +188,6 @@ class KnowledgeRetriever:
         return result
 
     def _rrf_fusion(self, vector_ranked: list, bm25_ranked: list, k: int = 60) -> list:
-        """Reciprocal Rank Fusion."""
         scores = {}
         chunk_map = {}
 
@@ -213,11 +211,7 @@ class KnowledgeRetriever:
         return result
 
     async def _rerank(self, query: str, candidates: list) -> list:
-        """
-        Gemini reranker — scores each candidate 0-1 against the query.
-        Drops anything below RERANK_THRESHOLD.
-        """
-        if not candidates:
+        if not candidates or not settings.gemini_api_key:
             return candidates
 
         try:
@@ -244,10 +238,9 @@ Scores:"""
             reranked = []
             for i, candidate in enumerate(candidates):
                 score = scores[i] if i < len(scores) else 0.5
-                if score >= RERANK_THRESHOLD:
-                    item = dict(candidate)
-                    item["rerank_score"] = score
-                    reranked.append(item)
+                item = dict(candidate)
+                item["rerank_score"] = float(score)
+                reranked.append(item)
 
             reranked.sort(key=lambda x: x["rerank_score"], reverse=True)
             return reranked

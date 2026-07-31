@@ -4,11 +4,22 @@ import React, { useState } from "react";
 import TradingViewWidget from "@/components/TradingViewWidget";
 import ChecklistPanel from "@/components/ChecklistPanel";
 import ChatPanel from "@/components/ChatPanel";
-import { TrendingUp, TrendingDown, DollarSign, Activity } from "lucide-react";
+import { TrendingUp, TrendingDown } from "lucide-react";
 
 export default function DashboardPage() {
   const [symbol, setSymbol] = useState("FX:EURUSD");
   const [htfBias, setHtfBias] = useState("BULLISH");
+  const [checklistMap, setChecklistMap] = useState<Record<string, boolean>>({});
+
+  const handleEvaluationChange = (evalResult: any, contextMap: Record<string, boolean>) => {
+    setChecklistMap(contextMap);
+  };
+
+  const currentMarketContext = {
+    symbol: symbol,
+    htf_bias: htfBias,
+    ...checklistMap,
+  };
 
   return (
     <div className="h-full flex flex-col space-y-4">
@@ -79,12 +90,12 @@ export default function DashboardPage() {
             <TradingViewWidget symbol={symbol} />
           </div>
           <div className="h-[220px]">
-            <ChecklistPanel />
+            <ChecklistPanel onEvaluationChange={handleEvaluationChange} />
           </div>
         </div>
 
         <div className="col-span-4 h-full">
-          <ChatPanel />
+          <ChatPanel marketContext={currentMarketContext} />
         </div>
       </div>
     </div>

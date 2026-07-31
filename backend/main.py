@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from config import get_settings
 from database.db import init_db
-from api.routes import chat, voice, knowledge, strategy, journal, backtest, memory, health
+from api.routes import chat, voice, knowledge, strategy, journal, backtest, memory, health, analytics, auth
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -47,12 +47,14 @@ app.add_middleware(
 
 # ── Routes ────────────────────────────────────────────────────────
 app.include_router(health.router, tags=["Health"])
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(chat.router, prefix="/api/v1", tags=["AI Chat"])
 app.include_router(voice.router, prefix="/api/v1/voice", tags=["Voice"])
 app.include_router(knowledge.router, prefix="/api/v1/knowledge", tags=["Knowledge"])
 app.include_router(strategy.router, prefix="/api/v1/strategy", tags=["Strategy"])
 app.include_router(journal.router, prefix="/api/v1/journal", tags=["Journal"])
 app.include_router(backtest.router, prefix="/api/v1/backtests", tags=["Backtests"])
+app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytics"])
 app.include_router(memory.router, prefix="/api/v1/memory", tags=["Memory"])
 
 

@@ -9,7 +9,11 @@ interface Message {
   citations?: any[];
 }
 
-export default function ChatPanel() {
+interface ChatPanelProps {
+  marketContext?: any;
+}
+
+export default function ChatPanel({ marketContext }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -32,7 +36,11 @@ export default function ChatPanel() {
       const res = await fetch("http://localhost:8000/api/v1/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userText, conversation_id: "default_conv" }),
+        body: JSON.stringify({
+          message: userText,
+          conversation_id: "default_conv",
+          market_context: marketContext,
+        }),
       });
 
       if (!res.ok) throw new Error("Failed to send message");
