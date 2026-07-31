@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+import os
 
 
 class Settings(BaseSettings):
@@ -7,15 +8,15 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
 
     # Database
-    database_url: str = "sqlite+aiosqlite:////data/traders_world.db"
+    database_url: str = "sqlite+aiosqlite:///./traders_world.db"
 
     # ChromaDB
     chroma_host: str = "localhost"
     chroma_port: int = 8000
 
     # Paths
-    knowledge_path: str = "/knowledge"
-    prompts_path: str = "/prompts"
+    knowledge_path: str = "./knowledge"
+    prompts_path: str = "./prompts"
 
     # Environment
     env: str = "development"
